@@ -1,54 +1,71 @@
 import 'package:flutter/material.dart';
-import 'register_screen.dart';
-import 'home_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final _email = TextEditingController();
-  final _senha = TextEditingController();
-
-  void _login() {
-    final email = _email.text;
-    final senha = _senha.text;
-    // Aqui você faria a validação com backend ou SQLite.
-    if (email == 'teste@exemplo.com' && senha == '123456') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (_) => const AlertDialog(
-          title: Text('Erro'),
-          content: Text('E-mail ou senha incorretos!'),
-        ),
-      );
-    }
-  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Login')),
-    body: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
-          TextField(controller: _senha, obscureText: true, decoration: const InputDecoration(labelText: 'Senha')),
-          const SizedBox(height: 20),
-          ElevatedButton(onPressed: _login, child: const Text('Entrar')),
-          TextButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-            child: const Text('Registrar-se'),
-          )
+  Widget build(BuildContext context) {
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController senhaController = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Business Control App'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Sobre'),
+                  content: const Text('Desenvolvido por Marcus Vínícius Maracajá Pires'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Fechar'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
-    ),
-  );
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: senhaController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Senha'),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                // Aqui você pode validar email/senha depois
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              child: const Text('Login'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/register');
+              },
+              child: const Text('Cadastrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

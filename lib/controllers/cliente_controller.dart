@@ -1,22 +1,23 @@
+import 'package:sqflite/sqflite.dart';
 import '../models/cliente.dart';
 import '../helpers/database_helper.dart';
 
 class ClienteController {
-  Future<List<Cliente>> listarClientes() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.query('clientes');
-    return result.map((e) => Cliente.fromMap(e)).toList();
+  Future<int> salvarCliente(Cliente cliente) async {
+    final db = await DatabaseHelper().database;
+    return await db.insert('cliente', cliente.toMap());
   }
 
-  Future<int> salvarCliente(Cliente cliente) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db.insert('clientes', cliente.toMap());
+  Future<List<Cliente>> listarPorEmpresa(int idEmpresa) async {
+    final db = await DatabaseHelper().database;
+    final maps = await db.query('cliente', where: 'idEmpresa = ?', whereArgs: [idEmpresa]);
+    return maps.map((m) => Cliente.fromMap(m)).toList();
   }
 
   Future<int> atualizarCliente(Cliente cliente) async {
-    final db = await DatabaseHelper.instance.database;
+    final db = await DatabaseHelper().database;
     return await db.update(
-      'clientes',
+      'cliente',
       cliente.toMap(),
       where: 'id = ?',
       whereArgs: [cliente.id],
@@ -24,11 +25,23 @@ class ClienteController {
   }
 
   Future<int> excluirCliente(int id) async {
-    final db = await DatabaseHelper.instance.database;
+    final db = await DatabaseHelper().database;
     return await db.delete(
-      'clientes',
+      'cliente',
       where: 'id = ?',
       whereArgs: [id],
     );
   }
+
+  Future<List<Cliente>> listarClientes(int idEmpresa) async {
+    final db = await DatabaseHelper().database;
+    final result = await db.query(
+      'clientes',
+      where: 'idEmpresa = ?',
+      whereArgs: [idEmpresa],
+    );
+    return result.map((e) => Cliente.fromMap(e)).toList();
+  }
+
+
 }

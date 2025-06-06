@@ -1,39 +1,49 @@
 import 'package:sqflite/sqflite.dart';
-import '../helpers//database_helper.dart';
+
 import '../models/usuario.dart';
+import '../helpers/database_helper.dart';
 
 class UsuarioController {
-  // Aponta para o banco inicializado em database_helper.dart
-  final Future<Database> _db = DatabaseHelper().database;
-
-  // Método para inserir um usuário no banco
-  Future<int> inserir(Usuario u) async {
-    final banco = await _db;
-    return banco.insert('usuario', u.toMap());
-  }
-
-  // Método para autenticar (não usado ainda, mas já pode existir)
-  Future<Usuario?> autenticar(String email, String senha) async {
-    final banco = await _db;
-    final maps = await banco.query(
-      'usuario',
-      where: 'email = ? AND senha = ?',
-      whereArgs: [email, senha],
-    );
-    if (maps.isNotEmpty) return Usuario.fromMap(maps.first);
-    return null;
-  }
-
-  // Método para listar todos os usuários
-  Future<List<Usuario>> listar() async {
-    final banco = await _db;
-    final maps = await banco.query('usuario');
+  Future<List<Usuario>> listarUsuarios() async {
+    final db = await DatabaseHelper().database;
+    final maps = await db.query('usuarios');
     return maps.map((m) => Usuario.fromMap(m)).toList();
   }
 
-  // Método para excluir um usuário pelo id
-  Future<int> excluir(int id) async {
-    final banco = await _db;
-    return banco.delete('usuario', where: 'id = ?', whereArgs: [id]);
+  Future<int> salvarUsuario(Usuario usuario) async {
+    final db = await DatabaseHelper().database;
+    return await db.insert('usuarios', usuario.toMap());
+  }
+
+  Future<int> atualizarUsuario(Usuario usuario) async {
+    final db = await DatabaseHelper().database;
+    return await db.update(
+      'usuarios',
+      usuario.toMap(),
+      where: 'id = ?',
+      whereArgs: [usuario.id],
+    );
+  }
+
+  Future<int> excluirUsuario(int id) async {
+    final db = await DatabaseHelper().database;
+    return await db.delete('usuarios', where: 'id = ?', whereArgs: [id]);
+  }
+  Future<void> inserir(Usuario usuario) async {
+    final db = await DatabaseHelper().database;
+    await db.insert(
+      'usuarios',
+      usuario.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> adicionarUsuario(Usuario usuario) async {
+    final db = await DatabaseHelper.instance.database;
+    await db.insert(
+      'usuarios',
+      usuario.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace, // substitui se houver duplicata
+    );
   }
 }

@@ -1,34 +1,36 @@
+import 'package:sqflite/sqflite.dart';
 import '../models/produto.dart';
 import '../helpers/database_helper.dart';
 
 class ProdutoController {
-  Future<List<Produto>> listarProdutos() async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.query('produtos');
-    return result.map((e) => Produto.fromMap(e)).toList();
-  }
-
   Future<int> salvarProduto(Produto produto) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db.insert('produtos', produto.toMap());
+    final db = await DatabaseHelper().database;
+    return await db.insert('produto', produto.toMap());
   }
 
-  Future<int> atualizarProduto(Produto produto) async {
-    final db = await DatabaseHelper.instance.database;
-    return await db.update(
-      'produtos',
-      produto.toMap(),
-      where: 'id = ?',
-      whereArgs: [produto.id],
-    );
+  Future<List<Produto>> listarPorEmpresa(int idEmpresa) async {
+    final db = await DatabaseHelper().database;
+    final maps = await db.query('produto', where: 'idEmpresa = ?', whereArgs: [idEmpresa]);
+    return maps.map((m) => Produto.fromMap(m)).toList();
   }
 
   Future<int> excluirProduto(int id) async {
-    final db = await DatabaseHelper.instance.database;
+    final db = await DatabaseHelper().database;
     return await db.delete(
-      'produtos',
+      'produto',
       where: 'id = ?',
       whereArgs: [id],
     );
   }
+
+  Future<List<Produto>> listarProdutos(int idEmpresa) async {
+    final db = await DatabaseHelper().database;
+    final result = await db.query(
+      'produtos',
+      where: 'idEmpresa = ?',
+      whereArgs: [idEmpresa],
+    );
+    return result.map((e) => Produto.fromMap(e)).toList();
+  }
+
 }

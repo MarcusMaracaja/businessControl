@@ -4,65 +4,108 @@ import '../controllers/produto_controller.dart';
 
 class ProdutoFormScreen extends StatefulWidget {
   final Produto? produto;
-  const ProdutoFormScreen({super.key, this.produto});
+  final int idEmpresa;
+
+  const ProdutoFormScreen({
+    super.key,
+    this.produto,
+    required this.idEmpresa,
+  });
 
   @override
   State<ProdutoFormScreen> createState() => _ProdutoFormScreenState();
 }
 
-class _ProdutoFormScreenState extends State<ProdutoFormScreen> {
-  final _form = GlobalKey<FormState>();
-  final _nome = TextEditingController();
-  final _preco = TextEditingController();
-  final _qtd = TextEditingController();
-  final _codBar = TextEditingController();
-  final _ctrl = ProdutoController();
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.produto != null) {
-      _nome.text = widget.produto!.nome;
-      _preco.text = widget.produto!.preco.toString();
-      _qtd.text = widget.produto!.quantidade.toString();
-      _codBar.text = widget.produto!.codigoBarras ?? '';
+class _ProdutoFormScreenState extends State<ProdutoFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nomeController = TextEditingController();
+  final _precoController = TextEditingController();
+  final _quantidadeController = TextEditingController();
+  final _codigoController = TextEditingController();
+
+  Future<void> salvar() async {
+    if (_formKey.currentState!.validate()) {
+      final produto = Produto(
+        id: widget.produto?.id,
+        nome: _nomeController.text,
+        preco: double.tryParse(_precoController.text) ?? 0,
+        quantidade: int.tryParse(_quantidadeController.text) ?? 0,
+        codigoBarras: _codigoController.text,
+        idEmpresa: widget.idEmpresa, estoque: null,
+      );
+      await ProdutoController().salvarProduto(produto);
+      Navigator.pop(context, true); // Volta para lista
     }
   }
 
   @override
-  Widget build(BuildContext ctx) => Scaffold(
-    appBar: AppBar(title: Text(widget.produto == null ? 'Novo Produto' : 'Editar Produto')),
-    body: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _form,
-        child: Column(
-          children: [
-            TextFormField(controller: _nome, decoration: const InputDecoration(labelText: 'Nome')),
-            TextFormField(controller: _preco, decoration: const InputDecoration(labelText: 'Preço'), keyboardType: TextInputType.number),
-            TextFormField(controller: _qtd, decoration: const InputDecoration(labelText: 'Quantidade'), keyboardType: TextInputType.number),
-            TextFormField(controller: _codBar, decoration: const InputDecoration(labelText: 'Código de Barras')),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              child: const Text('Salvar'),
-              onPressed: () async {
-                if (!_form.currentState!.validate()) return;
-                final p = Produto(
-                  id: widget.produto?.id,
-                  nome: _nome.text,
-                  preco: double.parse(_preco.text),
-                  quantidade: int.parse(_qtd.text),
-                  codigoBarras: _codBar.text,
-                  idEmpresa: /*id atual*/,
-                );
-                if (widget.produto == null) await _ctrl.inserir(p);
-                else await _ctrl.atualizar(p);
-                Navigator.pop(ctx, true);
-              },
-            ),
-          ],
+  void initState() {
+    super.initState();
+    _carregarDadosProduto();
+  }
+
+  void _carregarDadosProduto() {
+    if (widget.produto != null) {
+      try {
+        _nomeController.text = widget.produto?.nome ?? '';
+        _precoController.text = widget.produto?.preco?.toStringAsFixed(2) ?? '0.00';
+        _quantidadeController.text = widget.produto?.quantidade?.toString() ?? '0';
+        _codigoController.text = widget.produto?.codigoBarras ?? '';
+      } catch (e) {
+        debugPrint('Erro ao carregar dados do produto: $e');
+        // Você pode adicionar um SnackBar ou outro feedback visual aqui
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _precoController.dispose();
+    _quantidadeController.dispose();
+    _codigoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Novo Produto')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+                validator: (v) => v!.isEmpty ? 'Informe o nome' : null,
+              ),
+              TextFormField(
+                controller: _precoController,
+                decoration: const InputDecoration(labelText: 'Preço'),
+                keyboardType: TextInputType.number,
+              ),
+              TextFormField(
+                controller: _quantidadeController,
+                decoration: const InputDecoration(labelText: 'Quantidade'),
+                keyboardType: TextInputType.number,
+              ),
+              TextFormField(
+                controller: _codigoController,
+                decoration: const InputDecoration(labelText: 'Código de Barras'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: salvar,
+                child: const Text('Salvar'),
+              )
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

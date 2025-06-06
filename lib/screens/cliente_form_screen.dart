@@ -1,74 +1,99 @@
 import 'package:flutter/material.dart';
 import '../models/cliente.dart';
 import '../controllers/cliente_controller.dart';
-import '../utils/correios_api.dart';
 
 class ClienteFormScreen extends StatefulWidget {
-  final Cliente? cliente;
-  const ClienteFormScreen({super.key, this.cliente});
+  final int idEmpresa;
+  final Cliente? cliente; // <- Agora aceita cliente opcional para edição
+
+  const ClienteFormScreen({
+    super.key,
+    required this.idEmpresa,
+    this.cliente,
+  });
 
   @override
   State<ClienteFormScreen> createState() => _ClienteFormScreenState();
 }
 
 class _ClienteFormScreenState extends State<ClienteFormScreen> {
-  final _form = GlobalKey<FormState>();
-  final _nome = TextEditingController();
-  final _tel = TextEditingController();
-  final _cep = TextEditingController();
-  final _end = TextEditingController();
-  final _ctrl = ClienteController();
+  final _formKey = GlobalKey<FormState>();
+  final _nomeController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  final _cepController = TextEditingController();
+  final _enderecoController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     if (widget.cliente != null) {
-      _nome.text = widget.cliente!.nome;
-      _tel.text = widget.cliente!.telefone;
-      _cep.text = widget.cliente!.cep;
-      _end.text = widget.cliente!.endereco ?? '';
+      _nomeController.text = widget.cliente!.nome;
+      _telefoneController.text = widget.cliente!.telefone;
+      _cepController.text = widget.cliente!.cep;
+      _enderecoController.text = widget.cliente!.endereco;
     }
   }
 
-  void _buscarCep() async {
-    final e = await CorreiosAPI.consultarEndereco(_cep.text);
-    setState(() => _end.text = e);
+  Future<void> salvar() async {
+    if (_formKey.currentState!.validate()) {
+      final cliente = Cliente(
+        id: widget.cliente?.id, // <- Só preenche se for edição
+        nome: _nomeController.text,
+        telefone: _telefoneController.text,
+        cep: _cepController.text,
+        endereco: _enderecoController.text,
+        idEmpresa: widget.idEmpresa,
+      );
+
+      final controller = ClienteController();
+      if (widget.cliente == null) {
+        await controller.salvarCliente(cliente); // novo
+      } else {
+        await controller.atualizarCliente(cliente); // editar
+      }
+
+      Navigator.pop(context, true);
+    }
   }
 
   @override
-  Widget build(BuildContext ctx) => Scaffold(
-    appBar: AppBar(title: Text(widget.cliente == null ? 'Novo Cliente' : 'Editar Cliente')),
-    body: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _form,
-        child: Column(
-          children: [
-            TextFormField(controller: _nome, decoration: const InputDecoration(labelText: 'Nome')),
-            TextFormField(controller: _tel, decoration: const InputDecoration(labelText: 'Telefone')),
-            TextFormField(controller: _cep, decoration: const InputDecoration(labelText: 'CEP'), keyboardType: TextInputType.number, onEditingComplete: _buscarCep),
-            TextFormField(controller: _end, decoration: const InputDecoration(labelText: 'Endereço')),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              child: const Text('Salvar'),
-              onPressed: () async {
-                if (!_form.currentState!.validate()) return;
-                final c = Cliente(
-                  id: widget.cliente?.id,
-                  nome: _nome.text,
-                  telefone: _tel.text,
-                  cep: _cep.text,
-                  endereco: _end.text,
-                  idEmpresa: /*id da empresa*/,
-                );
-                if (widget.cliente == null) await _ctrl.inserir(c);
-                else await _ctrl.atualizar(c);
-                Navigator.pop(ctx, true);
-              },
-            ),
-          ],
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.cliente == null ? 'Novo Cliente' : 'Editar Cliente'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+                validator: (v) => v!.isEmpty ? 'Informe o nome' : null,
+              ),
+              TextFormField(
+                controller: _telefoneController,
+                decoration: const InputDecoration(labelText: 'Telefone'),
+              ),
+              TextFormField(
+                controller: _cepController,
+                decoration: const InputDecoration(labelText: 'CEP'),
+              ),
+              TextFormField(
+                controller: _enderecoController,
+                decoration: const InputDecoration(labelText: 'Endereço'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: salvar,
+                child: const Text('Salvar'),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -3,22 +3,23 @@ import '../helpers/database_helper.dart';
 
 class ItemVendaController {
   Future<List<ItemVenda>> listarItensPorVenda(int idVenda) async {
-    final db = await DatabaseHelper.instance.database;
-    final result = await db.query(
+    final db = await DatabaseHelper().database;
+    final maps = await db.query(
       'itens_venda',
       where: 'idVenda = ?',
       whereArgs: [idVenda],
     );
-    return result.map((e) => ItemVenda.fromMap(e)).toList();
+
+    return maps.map((map) => ItemVenda.fromMap(map)).toList();
   }
 
-  Future<int> salvarItem(ItemVenda item) async {
-    final db = await DatabaseHelper.instance.database;
+  Future<int> salvarItemVenda(ItemVenda item) async {
+    final db = await DatabaseHelper().database;
     return await db.insert('itens_venda', item.toMap());
   }
 
-  Future<int> atualizarItem(ItemVenda item) async {
-    final db = await DatabaseHelper.instance.database;
+  Future<int> atualizarItemVenda(ItemVenda item) async {
+    final db = await DatabaseHelper().database;
     return await db.update(
       'itens_venda',
       item.toMap(),
@@ -27,12 +28,21 @@ class ItemVendaController {
     );
   }
 
-  Future<int> excluirItem(int id) async {
-    final db = await DatabaseHelper.instance.database;
+  Future<int> excluirItemVenda(int id) async {
+    final db = await DatabaseHelper().database;
     return await db.delete(
       'itens_venda',
       where: 'id = ?',
       whereArgs: [id],
+    );
+  }
+
+  Future<int> excluirItensPorVenda(int idVenda) async {
+    final db = await DatabaseHelper().database;
+    return await db.delete(
+      'itens_venda',
+      where: 'idVenda = ?',
+      whereArgs: [idVenda],
     );
   }
 }

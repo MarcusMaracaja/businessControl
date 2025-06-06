@@ -17,6 +17,8 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
   final _tel = TextEditingController();
   final _ctrl = EmpresaController();
 
+  final int _idUsuario = 1; // <-- Substitua com o ID real do usuário logado
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,14 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
   }
 
   @override
+  void dispose() {
+    _nome.dispose();
+    _cnpj.dispose();
+    _tel.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext ctx) => Scaffold(
     appBar: AppBar(title: Text(widget.empresa == null ? 'Nova Empresa' : 'Editar Empresa')),
     body: Padding(
@@ -36,9 +46,21 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
         key: _form,
         child: Column(
           children: [
-            TextFormField(controller: _nome, decoration: const InputDecoration(labelText: 'Nome')),
-            TextFormField(controller: _cnpj, decoration: const InputDecoration(labelText: 'CNPJ')),
-            TextFormField(controller: _tel, decoration: const InputDecoration(labelText: 'Telefone')),
+            TextFormField(
+              controller: _nome,
+              decoration: const InputDecoration(labelText: 'Nome'),
+              validator: (v) => v == null || v.isEmpty ? 'Informe o nome' : null,
+            ),
+            TextFormField(
+              controller: _cnpj,
+              decoration: const InputDecoration(labelText: 'CNPJ'),
+              validator: (v) => v == null || v.isEmpty ? 'Informe o CNPJ' : null,
+            ),
+            TextFormField(
+              controller: _tel,
+              decoration: const InputDecoration(labelText: 'Telefone'),
+              validator: (v) => v == null || v.isEmpty ? 'Informe o telefone' : null,
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               child: const Text('Salvar'),
@@ -46,17 +68,17 @@ class _EmpresaFormScreenState extends State<EmpresaFormScreen> {
                 if (!_form.currentState!.validate()) return;
                 final e = Empresa(
                   id: widget.empresa?.id,
-                  nome: _nome.text,
-                  cnpj: _cnpj.text,
-                  telefone: _tel.text,
-                  idUsuario: /*id do usuário atual*/,
+                  nome: _nome.text.trim(),
+                  cnpj: _cnpj.text.trim(),
+                  telefone: _tel.text.trim(),
+                  idUsuario: _idUsuario,
                 );
                 if (widget.empresa == null) {
-                  await _ctrl.inserir(e);
+                  await _ctrl.salvarEmpresa(e);
                 } else {
-                  await _ctrl.atualizar(e);
+                  await _ctrl.atualizarEmpresa(e);
                 }
-                Navigator.pop(ctx, true);
+                if (context.mounted) Navigator.pop(ctx, true);
               },
             ),
           ],

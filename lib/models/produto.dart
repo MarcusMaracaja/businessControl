@@ -5,6 +5,11 @@ class Produto {
   int quantidade;
   String codigoBarras;
   int idEmpresa;
+  int? estoque; // Agora pode receber null
+
+  // ✅ agora pode ser alterado
+
+
 
   Produto({
     this.id,
@@ -13,31 +18,25 @@ class Produto {
     required this.quantidade,
     required this.codigoBarras,
     required this.idEmpresa,
+    required this.estoque,
   });
 
-  factory Produto.fromMap(Map<String, dynamic> map) {
-    return Produto(
-      id: map['id'],
-      nome: map['nome'],
-      preco: map['preco'],
-      quantidade: map['quantidade'],
-      codigoBarras: map['codigoBarras'],
-      idEmpresa: map['idEmpresa'],
-    );
-  }
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'nome': nome,
+    'preco': preco,
+    'quantidade': quantidade,
+    'codigoBarras': codigoBarras,
+    'idEmpresa': idEmpresa,
+  };
 
-  Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{
-      'nome': nome,
-      'preco': preco,
-      'quantidade': quantidade,
-      'codigoBarras': codigoBarras,
-      'idEmpresa': idEmpresa,
-    };
-    if (id != null) map['id'] = id;
-    return map;
-  }
-
-  factory Produto.fromJson(Map<String, dynamic> json) => Produto.fromMap(json);
-  Map<String, dynamic> toJson() => toMap();
+  static Produto fromMap(Map<String, dynamic> map) => Produto(
+    id: map['id'],
+    nome: map['nome'],
+    preco: map['preco'],
+    quantidade: map['quantidade'],
+    codigoBarras: map['codigoBarras'],
+    idEmpresa: map['idEmpresa'], 
+    estoque: null,
+  );
 }

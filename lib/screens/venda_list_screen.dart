@@ -4,7 +4,8 @@ import '../controllers/venda_controller.dart';
 import 'venda_form_screen.dart';
 
 class VendaListScreen extends StatefulWidget {
-  const VendaListScreen({super.key});
+  const VendaListScreen({super.key, required int idCliente});
+
   @override
   State<VendaListScreen> createState() => _VendaListScreenState();
 }
@@ -13,20 +14,41 @@ class _VendaListScreenState extends State<VendaListScreen> {
   final _ctrl = VendaController();
   List<Venda> _vendas = [];
 
+  final int _idEmpresa = 1; // Exemplo fixo
+
   Future<void> _load() async {
-    _vendas = await _ctrl.listarPorEmpresa(/*id da empresa*/);
+    _vendas = await _ctrl.listarPorEmpresa(_idEmpresa);
     setState(() {});
   }
 
-  Future<void> _openForm() async {
+  Future<void> _openForm([Venda? v]) async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const VendaFormScreen()),
+      MaterialPageRoute(builder: (_) => VendaFormScreen(venda: v)),
     );
     if (result == true) _load();
   }
 
-  void _confirmDelete(Venda v) { /* similar... */ }
+  void _confirmDelete(Venda v) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmação'),
+        content: const Text('Excluir esta venda?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              await _ctrl.excluirVenda(v.id!);
+              Navigator.pop(context);
+              _load();
+            },
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -35,22 +57,23 @@ class _VendaListScreenState extends State<VendaListScreen> {
   }
 
   @override
-  Widget build(BuildContext ctx) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Vendas')),
     body: ListView.builder(
       itemCount: _vendas.length,
-      itemBuilder: (_, i) {
-        final v = _vendas[i];
-        return ListTile(
-          title: Text(v.cliente.nome),
-          subtitle: Text('R\$ ${v.total.toStringAsFixed(2)} em ${v.itens.length} itens'),
-          onLongPress: () => _confirmDelete(v),
-        );
-      },
+      itemBuilder: (_, i) => ListTile(
+        title: Text('Venda ${_vendas[i].id}'),
+        subtitle: Text('Total: R\$ ${_vendas[i].valorTotal.toStringAsFixed(2)}'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () => _confirmDelete(_vendas[i]),
+        ),
+        onTap: () => _openForm(_vendas[i]),
+      ),
     ),
     floatingActionButton: FloatingActionButton(
-      onPressed: _openForm,
-      child: const Icon(Icons.add_shopping_cart),
+      onPressed: () => _openForm(),
+      child: const Icon(Icons.add),
     ),
   );
 }

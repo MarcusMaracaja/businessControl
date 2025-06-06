@@ -23,14 +23,26 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 4, // aumente a versão para forçar o upgrade
       onCreate: _onCreate,
+      onUpgrade: (Database db, int oldVersion, int newVersion) async {
+        // Apaga todas as tabelas antigas
+        await db.execute('DROP TABLE IF EXISTS usuarios');
+        await db.execute('DROP TABLE IF EXISTS empresas');
+        await db.execute('DROP TABLE IF EXISTS produto');
+        await db.execute('DROP TABLE IF EXISTS cliente');
+        await db.execute('DROP TABLE IF EXISTS venda');
+        await db.execute('DROP TABLE IF EXISTS itemVenda');
+
+        // Cria tudo de novo
+        await _onCreate(db, newVersion);
+      },
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE usuario (
+      CREATE TABLE usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT,
         email TEXT,
@@ -39,7 +51,7 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE empresa (
+      CREATE TABLE empresas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nome TEXT,
         cnpj TEXT,

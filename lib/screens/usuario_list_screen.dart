@@ -21,7 +21,7 @@ class _UsuarioListScreenState extends State<UsuarioListScreen> {
   }
 
   Future<void> _carregarUsuarios() async {
-    final lista = await _controller.listar();
+    final lista = await _controller.listarUsuarios();
     setState(() => _usuarios = lista);
   }
 
@@ -50,7 +50,7 @@ class _UsuarioListScreenState extends State<UsuarioListScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await _controller.excluir(usuario.id!);
+              await _controller.excluirUsuario(usuario.id!);
               Navigator.pop(ctx);
               _carregarUsuarios();
             },

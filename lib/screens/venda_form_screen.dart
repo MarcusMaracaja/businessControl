@@ -2,123 +2,113 @@ import 'package:flutter/material.dart';
 import '../models/venda.dart';
 import '../models/item_venda.dart';
 import '../models/produto.dart';
-import '../models/cliente.dart';
 import '../controllers/venda_controller.dart';
-import '../controllers/item_venda_controller.dart';
 import '../controllers/produto_controller.dart';
-import '../controllers/cliente_controller.dart';
 
 class VendaFormScreen extends StatefulWidget {
-  const VendaFormScreen({super.key});
+  final Venda? venda;
+  const VendaFormScreen({super.key, this.venda});
+
   @override
   State<VendaFormScreen> createState() => _VendaFormScreenState();
 }
 
 class _VendaFormScreenState extends State<VendaFormScreen> {
-  final _vCtrl = VendaController();
-  final _iCtrl = ItemVendaController();
-  final _pCtrl = ProdutoController();
-  final _cCtrl = ClienteController();
+  final _ctrlVenda = VendaController();
+  final _ctrlProduto = ProdutoController();
 
   List<Produto> _produtos = [];
-  List<Cliente> _clientes = [];
-  Cliente? _clienteSelecionado;
   final List<ItemVenda> _itens = [];
+
+  final int _idEmpresa = 1;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadProdutos();
+    if (widget.venda != null) {
+      _itens.addAll(widget.venda!.itens);
+    }
   }
 
-  Future<void> _load() async {
-    _produtos = await _pCtrl.listarPorEmpresa(/* id empresa */);
-    _clientes = await _cCtrl.listarPorEmpresa(/* id empresa */);
+  Future<void> _loadProdutos() async {
+    _produtos = await _ctrlProduto.listarPorEmpresa(_idEmpresa);
     setState(() {});
   }
 
-  void _addItem() async {
-    final p = await showDialog<Produto>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: const Text('Selecionar produto'),
-        children: _produtos.map((p) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, p),
-          child: Text('${p.nome} - R\$ ${p.preco}'),
-        )).toList(),
-      ),
-    );
-    if (p != null) {
-      final qtdC = TextEditingController();
-      await showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Quantidade para ${p.nome}?'),
-          content: TextField(controller: qtdC, keyboardType: TextInputType.number),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            TextButton(
-              onPressed: () => Navigator.pop(context, qtdC.text),
-              child: const Text('Ok'),
-            ),
-          ],
-        ),
-      );
-      if (int.tryParse(qtdC.text) != null) {
-        _itens.add(ItemVenda(produto: p, quantidade: int.parse(qtdC.text)));
-        setState(() {});
-      }
-    }
+  void _addItem(Produto p) {
+    final existente = _itens.where((i) => i.idProduto == p.id).isNotEmpty;
+    if (existente) return;
+
+    setState(() {
+      _itens.add(ItemVenda(
+        idVenda: null,
+        idProduto: p.id!,
+        quantidade: 1,
+        precoUnitario: p.preco,
+      ));
+    });
   }
 
-  double get _total => _itens.fold(0, (s, i) => s + i.subtotal);
-
-  Future<void> _save() async {
-    if (_clienteSelecionado == null || _itens.isEmpty) return;
-    final v = Venda(
-      id: null,
-      cliente: _clienteSelecionado!,
-      itens: _itens,
-      dataHora: DateTime.now(),
-    );
-    final vendaId = await _vCtrl.inserir(v);
-    for (var item in _itens) {
-      await _iCtrl.inserir(item..vendaId = vendaId);
-      await _pCtrl.reporEstoque(item.produto.id!, -item.quantidade);
-    }
-    Navigator.pop(context, true);
+  double _calcularTotal() {
+    return _itens.fold(0, (s, i) => s + (i.precoUnitario! * i.quantidade));
   }
 
   @override
-  Widget build(BuildContext ctx) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Nova Venda')),
-    body: _clientes.isEmpty
-        ? const Center(child: Text('Cadastre um cliente primeiro'))
-        : Padding(
+    body: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          DropdownButton<Cliente>(
-            isExpanded: true,
-            hint: const Text('Selecione o cliente'),
-            value: _clienteSelecionado,
-            items: _clientes.map((c) => DropdownMenuItem(
-              value: c,
-              child: Text(c.nome),
-            )).toList(),
-            onChanged: (v) => setState(() => _clienteSelecionado = v),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(onPressed: _addItem, child: const Text('Adicionar produto')),
-          const SizedBox(height: 8),
-          Text('Total: R\$ ${_total.toStringAsFixed(2)}'),
-          Expanded(child: ListView.builder(
-            itemCount: _itens.length,
-            itemBuilder: (_, i) => ListTile(
-              title: Text('${_itens[i].produto.nome} x${_itens[i].quantidade} = R\$ ${_itens[i].subtotal.toStringAsFixed(2)}'),
+          const Text('Produtos:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _produtos.length,
+              itemBuilder: (_, i) {
+                final p = _produtos[i];
+                return ListTile(
+                  title: Text(p.nome),
+                  subtitle: Text('R\$ ${p.preco.toStringAsFixed(2)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _addItem(p),
+                  ),
+                );
+              },
             ),
-          )),
-          ElevatedButton(onPressed: _save, child: const Text('Finalizar Venda')),
+          ),
+          const Divider(),
+          const Text('Itens da Venda:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Column(
+            children: _itens
+                .map((i) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Produto #${i.idProduto} (x${i.quantidade})'),
+                Text('R\$ ${(i.precoUnitario! * i.quantidade).toStringAsFixed(2)}'),
+              ],
+            ))
+                .toList(),
+          ),
+          const SizedBox(height: 10),
+          Text('Total: R\$ ${_calcularTotal().toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () async {
+              final venda = Venda(
+                id: widget.venda?.id,
+                idEmpresa: _idEmpresa,
+                idCliente: 1, // Você pode trocar isso depois
+                data: DateTime.now().toIso8601String(),
+                valorTotal: _calcularTotal(),
+                itens: _itens,
+              );
+              await _ctrlVenda.salvarVenda(venda, _itens);
+              Navigator.pop(context, true);
+            },
+            child: const Text('Salvar Venda'),
+          ),
         ],
       ),
     ),
